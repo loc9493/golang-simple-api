@@ -20,10 +20,31 @@ type Quotes struct {
 
 var con *sql.DB
 
+func AddQuote(quote *Quote) error {
+	con := db.CreateCon()
+	sql := "INSERT INTO quotes(type, quote, category, author) VALUES( ?, ?, ?, ?)"
+	stmt, err := con.Prepare(sql)
+
+	if err != nil {
+		fmt.Print(err.Error())
+		return err
+	}
+	defer stmt.Close()
+	result, err2 := stmt.Exec(quote.Type, quote.Quote, quote.Category, quote.Author)
+
+	// Exit if we get an error
+	if err2 != nil {
+		return err2
+		fmt.Print(err2.Error())
+	}
+	fmt.Println(result.LastInsertId())
+	return nil
+}
+
 func GetQuotes() Quotes {
 	con := db.CreateCon()
 	//db.CreateCon()
-	sqlStatement := "SELECT id,type, quote, category, author FROM quotes order by id limit 50"
+	sqlStatement := "SELECT id,type, quote, category, author FROM quotes order by id desc limit 50"
 
 	rows, err := con.Query(sqlStatement)
 	fmt.Println(rows)
@@ -45,5 +66,4 @@ func GetQuotes() Quotes {
 		result.Quotes = append(result.Quotes, quote)
 	}
 	return result
-
 }
