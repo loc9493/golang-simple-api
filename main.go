@@ -24,6 +24,8 @@ func main() {
 	// Routes
 	e.GET("/", hello)
 	e.GET("/quote", controllers.GetQuotes)
+	e.GET("/quote/:id", controllers.GetQuote)
+	e.PUT("/quote/:id", controllers.UpdateQuote)
 	e.POST("/quote", controllers.AddQuote)
 	// Start server
 	e.Logger.Fatal(e.Start(":1323"))

@@ -5,9 +5,12 @@ import (
 	_ "database/sql"
 	"fmt"
 	"helloworld/db"
+
+	"github.com/jinzhu/gorm"
 )
 
 type Quote struct {
+	gorm.Model
 	ID       string `json:"id"`
 	Type     int    `json:"type"`
 	Quote    string `json:"quote"`
@@ -20,50 +23,46 @@ type Quotes struct {
 
 var con *sql.DB
 
-func AddQuote(quote *Quote) error {
+func AddQuote(quote *Quote) {
 	con := db.CreateCon()
-	sql := "INSERT INTO quotes(type, quote, category, author) VALUES( ?, ?, ?, ?)"
-	stmt, err := con.Prepare(sql)
-
-	if err != nil {
-		fmt.Print(err.Error())
-		return err
-	}
-	defer stmt.Close()
-	result, err2 := stmt.Exec(quote.Type, quote.Quote, quote.Category, quote.Author)
-
-	// Exit if we get an error
-	if err2 != nil {
-		return err2
-		fmt.Print(err2.Error())
-	}
-	fmt.Println(result.LastInsertId())
-	return nil
+	con.Create(quote)
+	defer con.Close()
 }
 
-func GetQuotes() Quotes {
+func UpdateQuote(quote *Quote, id int) Quote {
+	con := db.CreateCon().Table("quotes")
+	var new_quote Quote
+	fmt.Println("Get qutoe")
+	con.First(&new_quote, id)
+
+	fmt.Println(new_quote.Quote, id)
+	fmt.Println("new qutoe %d", id)
+	con.Model(&new_quote).Updates(quote)
+	// new_quote.Type = quote.Type
+	// new_quote.Category = quote.Category
+	// new_quote.Quote = quote.Quote
+	// new_quote.Author = quote.Author
+	// con.Save(&new_quote)
+	defer con.Close()
+	return new_quote
+}
+
+func GetQuote(id int) Quote {
 	con := db.CreateCon()
-	//db.CreateCon()
-	sqlStatement := "SELECT id,type, quote, category, author FROM quotes order by id desc limit 50"
+	var quote Quote
+	con.Table("quotes").Find(&quote, id)
+	defer con.Close()
+	return quote
+}
 
-	rows, err := con.Query(sqlStatement)
-	fmt.Println(rows)
-	fmt.Println(err)
-	if err != nil {
-		fmt.Println(err)
-		//return c.JSON(http.StatusCreated, u);
-	}
-	defer rows.Close()
-	result := Quotes{}
-	for rows.Next() {
-		quote := Quote{}
-
-		err2 := rows.Scan(&quote.ID, &quote.Type, &quote.Quote, &quote.Category, &quote.Author)
-		// Exit if we get an error
-		if err2 != nil {
-			fmt.Print(err2)
-		}
-		result.Quotes = append(result.Quotes, quote)
-	}
+func GetQuotes(page int) []Quote {
+	limit := 50
+	con := db.CreateCon()
+	var result []Quote
+	quotes := Quotes{}
+	con.Table("quotes").Offset(page * limit).Limit(limit).Find(&result)
+	fmt.Println(result)
+	quotes.Quotes = result
+	defer con.Close()
 	return result
 }
